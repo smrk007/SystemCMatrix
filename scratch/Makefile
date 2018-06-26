@@ -14,4 +14,4 @@ tutorial2.exe:	tutorial2.o
 	$(CXX) -o $@ $< $(LDLIBS)
 
 clean:
-	rm *.exe *.o
+	rm *.exe *.o *.vcd
