@@ -1,0 +1,2 @@
+# Synthesizable matrix library written with the SystemC standard.
+# Developed with intent of being used in neural networks on FPGAs.
