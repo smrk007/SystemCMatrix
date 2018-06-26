@@ -1,0 +1,28 @@
+SC_MODULE
+Used to declare a class-like construct called a module, which interacts with other modules through 'wires'.
+
+SC_CTOR
+The 'constructor' for a module.
+
+sc_in_clk
+Essentially a publicly accessible variable that governs the behavior of a module in behaving as a clock.
+
+sc_in
+Essentially a publicly accessible variable for a module that can be used to define behaviors.
+
+sc_out
+Essentially a publicly accessible variable that outputs information from a module.
+
+sc_signal
+An abstracrt wire over which a signal is being transmitted.
+
+.read()
+Reads the value assigned to a sc_in/out "wire" (kind of like a pipe).
+
+.write(value)
+Writes "value" to a sc_in/out "wire" (kind of like a pipe).
+
+sc_time_stamp()
+Returns the current time within the simulation's clock.
+
+
