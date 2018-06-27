@@ -1,34 +1,20 @@
 #include <systemc.h>
 
 SC_MODULE (matrix2x2) {
-	// Matrix based on the assumption that all other matrices are 2x2
 
-	// Data input and output
-	sc_in<int> input_matrix[2][2];
-	sc_out<int> output_matrix;
+	// Signals
+	sc_in<int> i1, i2, i3, i4;
+	sc_out<int> o1, o2, o3, o4;
 
-	// Local data
+	// Local Data
 	int data[2][2];
 
 	// Functions
 	void initialize() {
-
-		for (int row = 0; row < 2; row++) {
-			for (int col = 0; col < 2; col++) {
-				data[row][col] = input_matrix[row][col].read();
-			}
-		}
-
+		std::cout << i1.read() << std::endl;
 	}
 
 	void print() {
-		
-		for (int row = 0; row < 2; row++) {
-			for (int col = 0; col < 2; col++) {
-				std::cout << data[row][col] << " ";
-			}
-			std::cout << std::endl;
-		}
 
 	}
 
