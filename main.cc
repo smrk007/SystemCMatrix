@@ -2,7 +2,7 @@
 #include <iostream>
 #include <systemc.h>
 
-#include "MMLU.cc"
+#include "SystemCMatrix.cc"
 
 int sc_main(int argc, char* argv[]) {
 
@@ -12,12 +12,12 @@ int sc_main(int argc, char* argv[]) {
 	sc_signal<int>		matrix_out[2][2];
 
 	// Linking Signals to Ports
-	MMLU mmlu("MMLU");
+	matrix_multiplier adder("MMLU");
 	for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {
-				mmlu.input1[row][col](matrix1[row][col]);
-				mmlu.input2[row][col](matrix2[row][col]);
-				mmlu.output[row][col](matrix_out[row][col]);
+				adder.input1[row][col](matrix1[row][col]);
+				adder.input2[row][col](matrix2[row][col]);
+				adder.output[row][col](matrix_out[row][col]);
 			}
 	}
 	sc_trace_file *trace_file = sc_create_vcd_trace_file("Matrix_Addition");
@@ -38,7 +38,7 @@ int sc_main(int argc, char* argv[]) {
 	}
 
 	sc_start(1, SC_NS);
-	mmlu.subtract();
+	adder.multiply();
 	sc_start(1, SC_NS);
 
 	// Debugging
