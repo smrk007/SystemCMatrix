@@ -24,11 +24,34 @@ SC_MODULE (feed_forward) {
 	matrix_multiplier	mmult1, mmult2;
 
 	// Process
-	void output();
+	void set_out1();
+	void set_out2();
+	void set_outf();
 
 	// Signals
 	SC_CTOR (feed_forward) : mmult1("MMULT1"), mmult2("MMULT2") {
-		SC_METHOD (output);
+		// Defining output behaviors
+		SC_METHOD (set_out1);
+			dont_initialize();
+			for (int row = 0; row < 2; row++) {
+				for (int col = 0; col < 2; col++) {
+					sensitive << input[row][col];
+				}
+			}
+		SC_METHOD (set_out2);
+			dont_initialize();
+			for (int row = 0; row < 2; row++) {
+				for (int col = 0; col < 2; col++) {
+					sensitive << mult_out1[row][col];
+				}
+			}
+		SC_METHOD (set_outf);
+			dont_initialize();
+			for (int row = 0; row < 2; row++) {
+				for (int col = 0; col < 2; col++) {
+					sensitive << mult_out2[row][col];
+				}
+			}
 		// Connecting Modules
 		for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {

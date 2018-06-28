@@ -16,6 +16,7 @@ SC_MODULE (matrix_adder) {
 
 	SC_CTOR (matrix_adder) {
 		SC_METHOD (add);
+		dont_initialize();
 		for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {
 				sensitive << input1[row][col] << input2[row][col];
@@ -40,6 +41,7 @@ SC_MODULE (matrix_multiplier) {
 
 	SC_CTOR (matrix_multiplier) {
 		SC_METHOD (multiply);
+		dont_initialize();
 		for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {
 				sensitive << input1[row][col] << input2[row][col];
