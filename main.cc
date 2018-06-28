@@ -56,10 +56,9 @@ int sc_main(int argc, char* argv[]) {
 	weights2[1][0] = 3;
 	weights2[1][1] = 1;
 
-	sc_start(100, SC_NS);
-	sc_start(100, SC_NS);
+	sc_start(1, SC_NS);
 	basic_ann.output();
-	sc_start(100, SC_NS);
+	sc_start(1, SC_NS);
 
 	for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {

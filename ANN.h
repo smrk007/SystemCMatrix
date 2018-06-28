@@ -29,6 +29,7 @@ SC_MODULE (feed_forward) {
 	// Signals
 	SC_CTOR (feed_forward) : mmult1("MMULT1"), mmult2("MMULT2") {
 		SC_METHOD (output);
+		// Connecting Modules
 		for (int row = 0; row < 2; row++) {
 			for (int col = 0; col < 2; col++) {
 				// mmult1

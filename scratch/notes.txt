@@ -1,44 +1,103 @@
-// Items
+Modules and Hierarchy, Hardware Data Types, Methods and Threads, Events and Sensitivity, Interfaces and Channels.
+What are the five categories of functionality that SystemC offers for hardware modelling?
 
-SC_MODULE
-Used to declare a class-like construct called a module, which interacts with other modules through 'wires'.
+SC_METHOD
+Essentially a function, specifically one that is not bound by the clock.
+
+SC_THREAD
+Essentially a function, specifically one that is bound by the clock.
+
+Static Sensitivity
+A kind of sensitivity that causes a function to run when a trigger is met. Is specified in constructor after a method with the sensitive keyword, and held by wait() at the beginning of the function initialization.
+
+Dynamic Sensitivity
+A kind of sensitivity to run whenever some event or time is completed. No triggers are specified within constructor, only wait(time, time_unit) or wait(event).
 
 SC_CTOR
-The 'constructor' for a module.
+Essentially the constructor for a SC module.
 
-sc_in_clk
-Essentially a publicly accessible variable that governs the behavior of a module in behaving as a clock.
+int, long int, unsigned int, unsigned long int, unsigned short int, short, float, char, bool
+Datatypes supported by the SystemC standard.
 
-sc_in
-Essentially a publicly accessible variable for a module that can be used to define behaviors.
+sc_logic
+A datatype alternative to sc_bit that holds the values... 0, 1, X, and Z.
 
-sc_out
-Essentially a publicly accessible variable that outputs information from a module.
+sc_bv
+SC bit vector, used to hold many bits. Declared... sc_bv<size> bit_vector.
+
+Ports, Internal Variables, Constructor, Internal Methods.
+Components of an SC Module.
+
+SC_MODULE
+The keyword used to declare a SystemC module.
+
+sc_in, sc_out, sc_inout
+The three basic modes of SystemC ports.
 
 sc_signal
-An abstracrt wire over which a signal is being transmitted.
+A SC construct used to interact with the ports of a module.
 
-.read()
-Reads the value assigned to a sc_in/out "wire" (kind of like a pipe).
+Process
+The method within a SC module that performs the desired functionality.
 
-.write(value)
-Writes "value" to a sc_in/out "wire" (kind of like a pipe).
+Ports
+These are the ONLY signals that should be used in defining the sensitivity of a module.
 
-sc_time_stamp()
-Returns the current time within the simulation's clock.
+sc_sensitive
+Static sensitivity for both positive and negative edge events.
 
-// MODULES TUTORIAL
+sc_sensitive_pos
+Static sensitivity for only positive edge events.
 
-	* Modules contain the following...
-		- Ports
-		- Internal Variables
-		- Constructor
-		- Internal Methods
-	* Modules declared with SC_MODULE (module_name)
-		- Alternatively: class module_name : sc_module
-	* Ports are used for communicating outside of a module...
-		- sc_in, sc_out, sc_inout
-	* Signals are used for communicating within a module
-		- sc_signal type variable;
-	* Signals are connected to ports like below...
-		module.port_name(signal_name);
+sc_sensitive_neg
+Static sensitivity for only negative edge events.
+
+SC_CTOR
+Module constructor that declares the hierarchy and sub-modules, as well as the methods during initialization.
+
+Process
+This SC construct that is NOT hierarchical, and may NOT call another process directly. Has a sensitivity list.
+
+SC_THREAD
+A recurring method whose recurrence is often bound by an event. Must contain a while loop.
+
+SC_CTHREAD
+A recurring method whose recurrence is based soley on a clock edge event.
+
+dont_initialize()
+Method descriptor within SC_CTOR that specifies a method should not run upon initialization.
+
+wait_until()
+Function called within a SC_CTHREAD process that halts the execution until a specified event occurs.
+
+delayed()
+Operator on a port or signal that will return the value in it.
+
+watching()
+??? Another way to exit a SC_CTHREAD.
+
+dont_initialize()
+Method descriptor within SC_CTOR that specifies a method should not run upon initialization.
+
+wait_until()
+Function called within a SC_CTHREAD process that halts the execution until a specified event occurs.
+
+delayed()
+Operator on a port or signal that will return the value in it.
+
+watching()
+??? Another way to exit a SC_CTHREAD.
+
+.read(), .write()
+Methods for interacting with ports, specifically sending data to and getting data from them.
+
+sc_in_rv, sc_out_rv, sc_inout_rv
+Ports that are allowed to have multiple drivers. (Resolved Logic Vector)
+
+sc_signal_rv
+Signals that are used to connect two resolved logic vector ports.
+
+sc_clock
+Used for synchronizing events in SystemC models.
+
+
