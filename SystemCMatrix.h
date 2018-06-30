@@ -43,7 +43,7 @@ SC_MODULE (matrix_multiplier) {
 		for (int i = 0; i < M1; i++) {
 		for (int j = 0; j < S; j++) {
 		for (int k = 0; k < M2; k++) {
-			temp[i][j] += input1[i][k].read() * input2[k][j].read();
+			temp[i][k] += input1[i][j].read() * input2[j][k].read();
 		}}}
 		// Sending Temp to Output
 		for (int row = 0; row < M1; row++) {
