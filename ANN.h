@@ -21,7 +21,7 @@ SC_MODULE (feed_forward) {
 	sc_signal<int>	mult_out2[2][2];
 
 	// Sub-Modules
-	matrix_multiplier	mmult1, mmult2;
+	matrix_multiplier<2,2,2>	mmult1, mmult2;
 
 	// Process
 	void set_out1();
