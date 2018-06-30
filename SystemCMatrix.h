@@ -1,6 +1,7 @@
 #ifndef _SYSTEMCMATRIX_H_
 #define _SYSTEMCMATRIX_H_
 
+#include <cmath>
 #include <systemc.h>
 
 SC_MODULE (matrix_adder) {
@@ -75,6 +76,34 @@ SC_MODULE (matrix_multiplier) {
 			}
 		}
 		SC_METHOD (clear_temp);
+	}
+};
+
+template <int D1, int D2>
+SC_MODULE (sigmoid_activation) {
+
+	// Ports
+	sc_in<float>	input[D1][D2];
+	sc_out<float>	output[D1][D2];
+
+	// Operation
+	void activate() {
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				float value = std::exp(input[row][col].read()) / (1 + std::exp(input[row][col].read()));
+				output[row][col].write(value);
+			}
+		}
+	}
+
+	SC_CTOR (sigmoid_activation) {
+		SC_METHOD (activate);
+		dont_initialize();
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				sensitive << input[row][col];
+			}
+		}
 	}
 };
 
