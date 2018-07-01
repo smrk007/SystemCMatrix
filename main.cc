@@ -33,7 +33,19 @@ int sc_main(int argc, char* argv[]) {
 	sc_start(1, SC_NS);
 
 	// Loading Data
-	
+	for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				input[row][col] = 0.5*col - 1.5;
+			}
+	}
+	sc_start(1, SC_NS);
+
+	// Debugging
+	for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				std::cout << output[row][col] << " ";
+			}
+	}
 
 	return 0;
 }
