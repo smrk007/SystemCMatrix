@@ -23,6 +23,7 @@ int sc_main(int argc, char* argv[]) {
 				sig_test.output[row][col](output[row][col]);
 			}
 	}
+
 	sc_trace_file *trace_file = sc_create_vcd_trace_file("TEST");
 	for (int row = 0; row < D1; row++) {
 			for (int col = 0; col < D2; col++) {
