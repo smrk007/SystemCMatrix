@@ -107,4 +107,33 @@ SC_MODULE (sigmoid_activation) {
 	}
 };
 
+template <int D1, int D2>
+SC_MODULE (array_multiplier) {
+
+	// Ports
+	sc_in<float>	input1[D1][D2];
+	sc_in<float>	input2[D1][D2];
+	sc_out<float>	output[D1][D2];
+
+	// Operation
+	void multiply() {
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				output[row][col].write(input1[row][col].read() * input2[row][col].read());
+			}
+		}
+	}
+
+	SC_CTOR (array_multiplier) {
+		SC_METHOD (multiply);
+			dont_initialize();
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				sensitive << input1[row][col];
+				sensitive << input2[row][col];
+			}
+		}
+	}
+};
+
 #endif /* SystemCMatrix.h */
