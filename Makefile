@@ -5,10 +5,10 @@ CXXFLAGS = -g
 
 all:	main.exe
 
-main.exe:	main.o SystemCMatrix.o ANN.o
+main.exe:	main.o SystemCMatrix.o ANN.h
 	$(CXX) -g -o $@ $< $(LDLIBS)
 
-test1.exe:	test1.o SystemCMatrix.o ANN.o
+test1.exe:	test1.o SystemCMatrix.o ANN.h
 	$(CXX) -g -o $@ $< $(LDLIBS)
 
 main.o:	main.cc 
