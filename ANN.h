@@ -113,4 +113,24 @@ SC_MODULE (feed_forward) {
 	}
 };
 
+template <int BATCH_SIZE, int OUTPUT_DIMENSION>
+// NOTE: This current implementation is based on the assumption that there will only be one hidden layer
+SC_MODULE (final_delta) {
+
+	// Ports
+	sc_in<float>	labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<float>	outf[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<float>	output[BATCH_SIZE][OUTPUT_DIMENSION];
+
+	// Sub-Modules
+	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract1;
+	array_multiplier<BATCH_SIZE,OUTPUT_DIMENSION>	arr_mult1;
+	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract2;
+	array_multiplier<BATCH_SIZE,OUTPUT_DIMENSION>	arr_mult2;
+
+	SC_CTOR (final_delta) {
+
+	}
+};
+
 #endif /* ANN.h */

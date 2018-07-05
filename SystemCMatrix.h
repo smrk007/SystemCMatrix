@@ -192,4 +192,24 @@ SC_MODULE (matrix_transpose) {
 	}
 };
 
+template <int D1, int D2>
+SC_MODULE (ones_array) {
+
+	// Ports
+	sc_out<float>	output[D1][D2];
+
+	// Operation
+	void output () {
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				output[row][col].write(1.0);
+			}
+		}
+	}
+
+	SC_CTOR (ones_array) {
+		SC_METHOD (output);
+	}
+};
+
 #endif /* SystemCMatrix.h */
