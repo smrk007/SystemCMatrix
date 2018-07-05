@@ -163,6 +163,33 @@ SC_MODULE (array_subtractor) {
 			}
 		}
 	}
-}
+};
+
+template <int D1, int D2>
+SC_MODULE (matrix_transpose) {
+
+	// Ports
+	sc_in<float>	input[D1][D2];
+	sc_out<float>	output[D1][D2];
+
+	// Operation
+	void transpose() {
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				output[row][col].write(input[col][row].read());
+			}
+		}
+	}
+
+	SC_CTOR (matrix_transpose) {
+		SC_METHOD (transpose);
+			dont_initialize();
+		for (int row = 0; row < D1; row++) {
+			for (int col = 0; col < D2; col++) {
+				sensitive << input[row][col];
+			}
+		}
+	}
+};
 
 #endif /* SystemCMatrix.h */
