@@ -125,6 +125,7 @@ SC_MODULE (final_delta) {
 	// Signals
 	sc_signal<float>	subtract1_out[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<float>	arr_mult1_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>	ones_output[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<float>	subtract2_out[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Sub-Modules
@@ -141,6 +142,20 @@ SC_MODULE (final_delta) {
 				subtract1.input1[row][col](outf[row][col]);
 				subtract1.input2[row][col](labels[row][col]);
 				subtract1.output[row][col](subtract1_out[row][col]);
+				// arr_mult1
+				arr_mult1.input1[row][col](outf[row][col]);
+				arr_mult1.input2[row][col](subtract1_out[row][col]);
+				arr_mult1.output[row][col](arr_mult1_out[row][col]);
+				// ones
+				ones.output[row][col](ones_output[row][col]);
+				// subtract2
+				subtract2.input1[row][col](ones_output[row][col]);
+				subtract2.input2[row][col](outf[row][col]);
+				subtract2.output[row][col](subtract2_out[row][col]);
+				// arr_mult2
+				arr_mult2.input1[row][col](arr_mult1_out[row][col]);
+				arr_mult2.input2[row][col](subtract2_out[row][col]);
+				arr_mult2.output[row][col](output[row][col]);
 			}
 		}
 	}
