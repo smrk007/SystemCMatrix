@@ -43,6 +43,7 @@ int sc_main(int argc, char* argvp[]) {
 			for (int col = 0; col < D2; col++) {
 				std::cout << output[row][col] << " ";
 			}
+		std::cout << std::endl;
 	}
 
     return 0;
