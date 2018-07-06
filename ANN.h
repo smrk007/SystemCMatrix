@@ -115,7 +115,7 @@ SC_MODULE (feed_forward) {
 
 template <int BATCH_SIZE, int OUTPUT_DIMENSION>
 // NOTE: This current implementation is based on the assumption that there will only be one hidden layer
-SC_MODULE (final_delta) {
+SC_MODULE (calculate_final_delta) {
 
 	// Ports
 	sc_in<float>		labels[BATCH_SIZE][OUTPUT_DIMENSION];
@@ -135,7 +135,7 @@ SC_MODULE (final_delta) {
 	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract2;
 	array_multiplier<BATCH_SIZE,OUTPUT_DIMENSION>	arr_mult2;
 
-	SC_CTOR (final_delta) : subtract1("SUBTRACT1"), arr_mult1("ARR_MULT1"), ones("ONES"), subtract2("SUBTRACT2"), arr_mult2("ARR_MULT2") {
+	SC_CTOR (calculate_final_delta) : subtract1("SUBTRACT1"), arr_mult1("ARR_MULT1"), ones("ONES"), subtract2("SUBTRACT2"), arr_mult2("ARR_MULT2") {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 				// subtract1
@@ -160,5 +160,45 @@ SC_MODULE (final_delta) {
 		}
 	}
 };
+
+template <int HIDDEN_LAYER_DIMENSION, int BATCH_SIZE, OUTPUT_DIMENSION>
+SC_MODULE (final_w_update) {
+
+	// Ports
+	sc_in<float>	out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_in<float>	final_delta[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<float>	output[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+
+	// Signals
+	sc_signal<float>	transpose_out[HIDDEN_LAYER_DIMENSION][BATCH_SIZE];
+
+	// Sub-Modules
+	matrix_transpose<BATCH_SIZE,HIDDEN_LAYER_DIMENSION>	transpose1;
+	matrix_multiplier<HIDDEN_LAYER_DIMENSION, BATCH_SIZE, OUTPUT_DIMENSION>	mmult1;
+
+	SC_CTOR (final_w_update) : transpose1("TRANSPOSE1"), mmult1("MMULT1") {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				transpose1.input1[row][col](out2[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < BATCH_SIZE; col++) {
+				transpose1.output[row][col](transpose_out[row][col]);
+				mmult1.input1[row][col](transpose_out[row][col]);
+			}
+		}
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				mmult1.input2[row][col](final_delta[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				mmult1.output[row][col](output[row][col]);
+			}
+		}
+	}
+}
 
 #endif /* ANN.h */
