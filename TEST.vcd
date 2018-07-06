@@ -1,0 +1,84 @@
+$date
+     Jul 06, 2018       14:32:25
+$end
+
+$version
+ SystemC 2.3.2-Accellera --- Feb 11 2018 10:24:16
+$end
+
+$timescale
+     1 ps
+$end
+
+$scope module SystemC $end
+$var real    1  aaaaa  input       $end
+$var real    1  aaaab  output       $end
+$var real    1  aaaac  input       $end
+$var real    1  aaaad  output       $end
+$var real    1  aaaae  input       $end
+$var real    1  aaaaf  output       $end
+$var real    1  aaaag  input       $end
+$var real    1  aaaah  output       $end
+$var real    1  aaaai  input       $end
+$var real    1  aaaaj  output       $end
+$var real    1  aaaak  input       $end
+$var real    1  aaaal  output       $end
+$var real    1  aaaam  input       $end
+$var real    1  aaaan  output       $end
+$var real    1  aaaao  input       $end
+$var real    1  aaaap  output       $end
+$var real    1  aaaaq  input       $end
+$var real    1  aaaar  output       $end
+$var real    1  aaaas  input       $end
+$var real    1  aaaat  output       $end
+$upscope $end
+$enddefinitions  $end
+
+$comment
+All initial values are dumped below at time 0 sec = 0 timescale units.
+$end
+
+$dumpvars
+r0 aaaaa
+r0 aaaab
+r0 aaaac
+r0 aaaad
+r0 aaaae
+r0 aaaaf
+r0 aaaag
+r0 aaaah
+r0 aaaai
+r0 aaaaj
+r0 aaaak
+r0 aaaal
+r0 aaaam
+r0 aaaan
+r0 aaaao
+r0 aaaap
+r0 aaaaq
+r0 aaaar
+r0 aaaas
+r0 aaaat
+$end
+
+#1000
+r-1.5 aaaaa
+r0.1824255138635635 aaaab
+r-1 aaaac
+r0.2689414322376251 aaaad
+r-0.5 aaaae
+r0.3775406777858734 aaaaf
+r0.5 aaaah
+r0.5 aaaai
+r0.622459352016449 aaaaj
+r1 aaaak
+r0.7310585975646973 aaaal
+r1.5 aaaam
+r0.8175745010375977 aaaan
+r2 aaaao
+r0.8807970881462097 aaaap
+r2.5 aaaaq
+r0.9241418242454529 aaaar
+r3 aaaas
+r0.9525741338729858 aaaat
+

@@ -118,18 +118,31 @@ template <int BATCH_SIZE, int OUTPUT_DIMENSION>
 SC_MODULE (final_delta) {
 
 	// Ports
-	sc_in<float>	labels[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_in<float>	outf[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_out<float>	output[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<float>		labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<float>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<float>		output[BATCH_SIZE][OUTPUT_DIMENSION];
+
+	// Signals
+	sc_signal<float>	subtract1_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>	arr_mult1_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>	subtract2_out[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Sub-Modules
 	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract1;
 	array_multiplier<BATCH_SIZE,OUTPUT_DIMENSION>	arr_mult1;
+	ones_array<BATCH_SIZE,OUTPUT_DIMENSION>			ones;
 	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract2;
 	array_multiplier<BATCH_SIZE,OUTPUT_DIMENSION>	arr_mult2;
 
-	SC_CTOR (final_delta) {
-
+	SC_CTOR (final_delta) : subtract1("SUBTRACT1"), arr_mult1("ARR_MULT1"), ones("ONES"), subtract2("SUBTRACT2"), arr_mult2("ARR_MULT2") {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				// subtract1
+				subtract1.input1[row][col](outf[row][col]);
+				subtract1.input2[row][col](labels[row][col]);
+				subtract1.output[row][col](subtract1_out[row][col]);
+			}
+		}
 	}
 };
 

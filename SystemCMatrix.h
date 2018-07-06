@@ -199,7 +199,7 @@ SC_MODULE (ones_array) {
 	sc_out<float>	output[D1][D2];
 
 	// Operation
-	void output () {
+	void create () {
 		for (int row = 0; row < D1; row++) {
 			for (int col = 0; col < D2; col++) {
 				output[row][col].write(1.0);
@@ -208,7 +208,7 @@ SC_MODULE (ones_array) {
 	}
 
 	SC_CTOR (ones_array) {
-		SC_METHOD (output);
+		SC_METHOD (create);
 	}
 };
 

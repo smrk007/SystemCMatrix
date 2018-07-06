@@ -3,15 +3,13 @@ CXX = g++
 LDLIBS = -lsystemc
 CXXFLAGS = -g
 
-all:	main.exe
+all:	main.exe test1.exe
 
 main.exe:	main.o SystemCMatrix.o ANN.h
-	$(CXX) -g -o $@ $< $(LDLIBS)
+	$(CXX) -g -o $@ $< $(LDLIBS) -v
 
 test1.exe:	test1.o SystemCMatrix.o ANN.h
 	$(CXX) -g -o $@ $< $(LDLIBS)
-
-main.o:	main.cc 
 
 clean:
 	rm *.o *.exe *.vcd
