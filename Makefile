@@ -1,7 +1,7 @@
 CXX = g++
 
 LDLIBS = -lsystemc
-LDFLAGS = -Wl,-stack_size -Wl,1000000000
+LDFLAGS = -Wl,-stack_size -Wl,10000000
 CXXFLAGS = -g
 
 all:	bin/main.exe bin/test_sigmoid.exe bin/test_arr_mult.exe

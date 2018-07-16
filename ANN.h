@@ -32,7 +32,6 @@ SC_MODULE (feed_forward) {
 					out1[row][col].write(input[row][col].read());
 				}
 		}
-		std::cout << "Output1" << std::endl;
 	}
 
 	void set_out2() {
@@ -41,7 +40,6 @@ SC_MODULE (feed_forward) {
 					out2[row][col].write(mult_out1[row][col].read());
 				}
 		}
-		std::cout << "Output2" << std::endl;
 	}
 
 	void set_outf() {
@@ -50,7 +48,6 @@ SC_MODULE (feed_forward) {
 					outf[row][col].write(mult_out2[row][col].read());
 				}
 		}
-		std::cout << "Output3" << std::endl;
 	}
 
 	// Signals
@@ -279,6 +276,7 @@ SC_MODULE (back_propogation) {
 	sc_in<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_out<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_out<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_out<float>		output_labels[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Signals
 	sc_signal<float>	fp_out1[BATCH_SIZE][INPUT_DIMENSION];
@@ -294,7 +292,24 @@ SC_MODULE (back_propogation) {
 	weight_update<INPUT_DIMENSION,BATCH_SIZE,HIDDEN_LAYER_DIMENSION>			weight1_update;
 	weight_update<HIDDEN_LAYER_DIMENSION,BATCH_SIZE,OUTPUT_DIMENSION>			weight2_update;
 
+	// Methods
+	void feedforward_output() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				output_labels[row][col].write(fp_outf[row][col].read());
+			}
+		}
+	}
+
 	SC_CTOR (back_propogation) : forward_propogate("FORWARD_PROPOGATE"), final_delta("FINAL_DELTA"), non_final_delta("NON_FINAL_DELTA"), weight1_update("WEIGHT1_UPDATE"), weight2_update("WEIGHT2_UPDATE") {
+		SC_METHOD (feedforward_output);
+		dont_initialize();
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				sensitive << fp_outf[row][col];
+			}
+		}
+		// Linking components together
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < INPUT_DIMENSION; col++) {
 				// forward_propogate

@@ -12,15 +12,19 @@
 int sc_main(int argc, char* argv[]) {
 
 	// Creating signals
+	std::cout << "Initializing signals" << std::endl;
 	sc_signal<float> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
 	sc_signal<float> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<float>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_signal<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_signal<float>		output_labels[BATCH_SIZE][OUTPUT_DIMENSION]; // TODO: Complete the necessary connections for this
 
 	// Linking signals to back propogation module
+	std::cout << "Initializing back-propogation model" << std::endl;
 	back_propogation<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION> trainer("TRAINER");
+	std::cout << "Linking signals" << std::endl;
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
 			trainer.input_data[row][col](input_data[row][col]);
@@ -29,6 +33,7 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			trainer.input_labels[row][col](input_labels[row][col]);
+			trainer.output_labels[row][col](output_labels[row][col]);
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -45,7 +50,9 @@ int sc_main(int argc, char* argv[]) {
 	}
 
 	// Linking signals to trace file
+	std::cout << "Creating trace file" << std::endl;
 	sc_trace_file *trace_file = sc_create_vcd_trace_file("ARTIFICIAL NEURAL NETWORK");
+	std::cout << "Linking signals to trace file" << std::endl;
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
 			sc_trace(trace_file, input_data[row][col], "input_data");
@@ -54,6 +61,7 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			sc_trace(trace_file, input_labels[row][col], "input_labels");
+			sc_trace(trace_file, output_labels[row][col], "output_labels");
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -71,14 +79,17 @@ int sc_main(int argc, char* argv[]) {
 	
 
 	// Loading batch data into the arrays and signals
+	std::cout << "Loading data" << std::endl;
 	float input_data_raw[BATCH_SIZE][INPUT_DIMENSION];
 	float input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION];
+	// Generating the data
 	load_data(input_data_raw,input_labels_raw);
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
 			input_data[row][col] = input_data_raw[row][col];
 		}
 	}
+	// Sending data to signals
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			input_labels[row][col] = input_labels_raw[row][col];
@@ -86,18 +97,21 @@ int sc_main(int argc, char* argv[]) {
 	}
 	
 	// Generating randomized weights
+	std::cout << "Generating weights" << std::endl;
 	float weights1_raw[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	float weights2_raw[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	// Generating the weights
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
 		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-			weights1_raw[row][col] = (((float) rand())/((float) RAND_MAX)) - 0.5;
+			weights1_raw[row][col] = (((float) rand())/((float) RAND_MAX));
 		}
 	}
 	for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-			weights2_raw[row][col] = (((float) rand())/((float) RAND_MAX)) - 0.5;
+			weights2_raw[row][col] = (((float) rand())/((float) RAND_MAX));
 		}
 	}
+	// Sending weights to signals
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
 		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
 			input_weights1[row][col] = weights1_raw[row][col];
@@ -107,6 +121,33 @@ int sc_main(int argc, char* argv[]) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			input_weights2[row][col] = weights2_raw[row][col];
 		}
+	}
+
+	// Training loop
+	std::cout << "Commencing training" << std::endl;
+	int count = 0;
+	float total_error = 0;
+	while (true) {
+		sc_start(1,SC_MS);
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				input_weights1[row][col] = input_weights1[row][col] - (output_weights1[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				input_weights2[row][col] = input_weights2[row][col] - (output_weights2[row][col]);
+			}
+		}
+
+		total_error = 0;
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				total_error += (input_labels[row][col] - output_labels[row][col]) * (input_labels[row][col] - output_labels[row][col]);
+			}
+		}
+		
+		std::cout << ++count << ": " << total_error << std::endl;
 	}
 
 	return 0;
