@@ -8,9 +8,9 @@ SC_MODULE (matrix_adder) {
 	// Matrix-Matrix Logic Unit
 
 	// Ports
-	sc_in<int>		input1[2][2];
-	sc_in<int>		input2[2][2];
-	sc_out<int>		output[2][2];
+	sc_in<float>		input1[2][2];
+	sc_in<float>		input2[2][2];
+	sc_out<float>		output[2][2];
 
 	// Operation
 	void add();
@@ -30,12 +30,12 @@ template <int M1, int S, int M2>
 SC_MODULE (matrix_multiplier) {
 
 	// Ports
-	sc_in<int>		input1[M1][S];
-	sc_in<int>		input2[S][M2];
-	sc_out<int>		output[M1][M2];
+	sc_in<float>		input1[M1][S];
+	sc_in<float>		input2[S][M2];
+	sc_out<float>		output[M1][M2];
 
 	// Variables
-	int				temp[M1][M2];
+	float				temp[M1][M2];
 
 	// Operation
 	void multiply() {
@@ -170,13 +170,13 @@ SC_MODULE (matrix_transpose) {
 
 	// Ports
 	sc_in<float>	input[D1][D2];
-	sc_out<float>	output[D1][D2];
+	sc_out<float>	output[D2][D1];
 
 	// Operation
 	void transpose() {
 		for (int row = 0; row < D1; row++) {
 			for (int col = 0; col < D2; col++) {
-				output[row][col].write(input[col][row].read());
+				output[col][row].write(input[row][col].read());
 			}
 		}
 	}
