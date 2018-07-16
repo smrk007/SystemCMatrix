@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -85,9 +86,28 @@ int sc_main(int argc, char* argv[]) {
 	}
 	
 	// Generating randomized weights
-	float weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	float weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-
+	float weights1_raw[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	float weights2_raw[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	for (int row = 0; row < INPUT_DIMENSION; row++) {
+		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+			weights1_raw[row][col] = (((float) rand())/((float) RAND_MAX)) - 0.5;
+		}
+	}
+	for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+			weights2_raw[row][col] = (((float) rand())/((float) RAND_MAX)) - 0.5;
+		}
+	}
+	for (int row = 0; row < INPUT_DIMENSION; row++) {
+		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+			input_weights1[row][col] = weights1_raw[row][col];
+		}
+	}
+	for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+			input_weights2[row][col] = weights2_raw[row][col];
+		}
+	}
 
 	return 0;
 }
