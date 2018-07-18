@@ -29,7 +29,8 @@ void load_data(float input_data_raw[BATCH_SIZE][INPUT_DIMENSION], float input_la
             }
             // Dealing with non-labels
             else {
-                input_data_raw[row][col-1] = atoi(row_element.c_str());
+                // NOTE: Data scaled down by 10,000 to avoid NaN in sigmoid activation
+                input_data_raw[row][col-1] = atof(row_element.c_str()) / 10000; 
             }
         }
     }

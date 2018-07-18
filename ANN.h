@@ -7,6 +7,12 @@
 #include "Modes.h"
 #include "SystemCMatrix.h"
 
+#if DEBUG == true
+	#define DEBUG_COMMA ,
+#else
+	#define DEBUG_COMMA
+#endif
+
 template <int BATCH_SIZE, int INPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION, int OUTPUT_DIMENSION>
 SC_MODULE (feed_forward) {
 
@@ -20,12 +26,16 @@ SC_MODULE (feed_forward) {
 	sc_out<float>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Signals
-	sc_signal<float>	mult_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float>	mult_out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<float>	mmult_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<float>	mmult_out2[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>	sig_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<float>	sig_out2[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Sub-Modules
 	matrix_multiplier<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION>	mmult1;
+	sigmoid_activation<BATCH_SIZE,HIDDEN_LAYER_DIMENSION>					sig_act1;
 	matrix_multiplier<BATCH_SIZE,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION>	mmult2;
+	sigmoid_activation<BATCH_SIZE,OUTPUT_DIMENSION>							sig_act2;
 
 	// Process
 	void set_out1() {
@@ -39,7 +49,7 @@ SC_MODULE (feed_forward) {
 	void set_out2() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-					out2[row][col].write(mult_out1[row][col].read());
+					out2[row][col].write(sig_out1[row][col].read());
 				}
 		}
 	}
@@ -47,13 +57,13 @@ SC_MODULE (feed_forward) {
 	void set_outf() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-					outf[row][col].write(mult_out2[row][col].read());
+					outf[row][col].write(sig_out2[row][col].read());
 				}
 		}
 	}
 
 	// Signals
-	SC_CTOR (feed_forward) : mmult1("MMULT1"), mmult2("MMULT2") {
+	SC_CTOR (feed_forward) : mmult1("MMULT1"), mmult2("MMULT2"), sig_act1("SIG_ACT1"), sig_act2("SIG_ACT2") {
 		// Defining output behaviors
 		SC_METHOD (set_out1);
 			dont_initialize();
@@ -66,14 +76,14 @@ SC_MODULE (feed_forward) {
 			dont_initialize();
 			for (int row = 0; row < BATCH_SIZE; row++) {
 				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-					sensitive << mult_out1[row][col];
+					sensitive << sig_out1[row][col];
 				}
 			}
 		SC_METHOD (set_outf);
 			dont_initialize();
 			for (int row = 0; row < BATCH_SIZE; row++) {
 				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-					sensitive << mult_out2[row][col];
+					sensitive << sig_out2[row][col];
 				}
 			}
 		// Connecting Modules
@@ -90,13 +100,13 @@ SC_MODULE (feed_forward) {
 		}
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				mmult1.output[row][col](mult_out1[row][col]);
+				mmult1.output[row][col](mmult_out1[row][col]);
 			}
 		}
 		// mmult2
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				mmult2.input1[row][col](mult_out1[row][col]);
+				mmult2.input1[row][col](sig_out1[row][col]);
 			}
 		}
 		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
@@ -106,7 +116,21 @@ SC_MODULE (feed_forward) {
 		}
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				mmult2.output[row][col](mult_out2[row][col]);
+				mmult2.output[row][col](mmult_out2[row][col]);
+			}
+		}
+		// sig_act1
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				sig_act1.input[row][col](mmult_out1[row][col]);
+				sig_act1.output[row][col](sig_out1[row][col]);
+			}
+		}
+		// sig_act2
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				sig_act2.input[row][col](mmult_out2[row][col]);
+				sig_act2.output[row][col](sig_out2[row][col]);
 			}
 		}
 	}
@@ -278,50 +302,51 @@ SC_MODULE (back_propogation) {
 	sc_core::sc_in<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_core::sc_out<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_core::sc_out<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_core::sc_vector<sc_core::sc_out<float> >	fp_outf_debug;
+
+	void set_fp_outf_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				fp_outf_debug[row*OUTPUT_DIMENSION + col].write(fp_outf[row][col].read());
+			}
+		}
+	}
 
 	// Debug
 	#if DEBUG == true
 	
 	// Debug Ports
-	sc_core::sc_out<float>	fp_out1_debug[BATCH_SIZE][INPUT_DIMENSION];
-	sc_core::sc_out<float>	fp_out2_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_core::sc_out<float>	fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_core::sc_out<float>	fd_out_debug[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_core::sc_out<float>	nfd_out_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_vector<sc_core::sc_out<float> >	fp_out1_debug;
+	sc_core::sc_vector<sc_core::sc_out<float> >	fp_out2_debug;
+	sc_core::sc_vector<sc_core::sc_out<float> >	fd_out_debug;
+	sc_core::sc_vector<sc_core::sc_out<float> >	nfd_out_debug;
 
 	// Debug Methods
 	void set_fp_out1_debug() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < INPUT_DIMENSION; col++) {
-				fp_out1_debug[row][col].write(fp_out1[row][col].read());
+				fp_out1_debug[row*INPUT_DIMENSION + col].write(fp_out1[row][col].read());
 			}
 		}
 	}
 	void set_fp_out2_debug() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				fp_out2_debug[row][col].write(fp_out2[row][col].read());
-			}
-		}
-	}
-	void set_fp_outf_debug() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				fp_outf_debug[row][col].write(fp_outf[row][col].read());
+				fp_out2_debug[row*HIDDEN_LAYER_DIMENSION + col].write(fp_out2[row][col].read());
 			}
 		}
 	}
 	void set_fd_out_debug() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				fd_out_debug[row][col].write(fd_out[row][col].read());
+				fd_out_debug[row*OUTPUT_DIMENSION + col].write(fd_out[row][col].read());
 			}
 		}
 	}
 	void set_nfd_out_debug() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				nfd_out_debug[row][col].write(nfd_out[row][col].read());
+				nfd_out_debug[row*HIDDEN_LAYER_DIMENSION + col].write(nfd_out[row][col].read());
 			}
 		}
 	}
@@ -342,42 +367,28 @@ SC_MODULE (back_propogation) {
 	weight_update<INPUT_DIMENSION,BATCH_SIZE,HIDDEN_LAYER_DIMENSION>			weight1_update;
 	weight_update<HIDDEN_LAYER_DIMENSION,BATCH_SIZE,OUTPUT_DIMENSION>			weight2_update;
 
-	SC_CTOR (back_propogation) : forward_propogate("FORWARD_PROPOGATE"), final_delta("FINAL_DELTA"), non_final_delta("NON_FINAL_DELTA"), weight1_update("WEIGHT1_UPDATE"), weight2_update("WEIGHT2_UPDATE") {
-
+	SC_CTOR (back_propogation) : 
+		forward_propogate("FORWARD_PROPOGATE"), 
+		final_delta("FINAL_DELTA"), 
+		non_final_delta("NON_FINAL_DELTA"),
+		weight1_update("WEIGHT1_UPDATE"),
+		fp_outf_debug("FP_OUTF_DEBUG", BATCH_SIZE * OUTPUT_DIMENSION),
+		weight2_update("WEIGHT2_UPDATE") DEBUG_COMMA
 		#if DEBUG == true
-		// NOTE: sc_in<float> files are given no name because operator= is a private member variable
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < INPUT_DIMENSION; col++) {
-				fp_out1_debug[row][col] = sc_core::sc_out<float>("fp_out1_debug");
-			}
-		}
+		fp_out1_debug("FP_OUT1_DEBUG", BATCH_SIZE * INPUT_DIMENSION),
+		fp_out2_debug("FP_OUT2_DEBUG", BATCH_SIZE * HIDDEN_LAYER_DIMENSION),
+		fd_out_debug("FD_OUT_DEBUG", BATCH_SIZE * OUTPUT_DIMENSION),
+		nfd_out_debug("NFD_OUT_DEBUG", BATCH_SIZE * HIDDEN_LAYER_DIMENSION)
+		#endif
+	{
 
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				fp_outf_debug[row][col] = sc_core::sc_out<float>("fp_outf_debug");
-				fd_out_debug[row][col] = sc_core::sc_out<float>("fd_out_debug");
+		SC_METHOD(set_fp_outf_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+					sensitive << fp_outf[row][col];
+				}
 			}
-		}
-
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				fp_out2_debug[row][col] = sc_core::sc_out<float>("fp_out2_debug");
-				nfd_out_debug[row][col] = sc_core::sc_out<float>("nfd_out_debug");
-			}
-		}
-
-		for (int row = 0; row < INPUT_DIMENSION; row++) {
-			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				output_weights1[row][col] = sc_core::sc_out<float>("output_weights1");
-			}
-		}
-
-		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				output_weights2[row][col] = sc_core::sc_out<float>("output_weights2");
-			}
-		}
-		#endif 
 		
 		// Debug Methods
 		#if DEBUG == true
@@ -396,13 +407,6 @@ SC_MODULE (back_propogation) {
 					sensitive << fp_out2[row][col];
 				}
 			}
-		SC_METHOD(set_fp_outf_debug);
-		dont_initialize();
-			for (int row = 0; row < BATCH_SIZE; row++) {
-				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-					sensitive << fp_outf[row][col];
-				}
-			}
 		SC_METHOD(set_fd_out_debug);
 		dont_initialize();
 			for (int row = 0; row < BATCH_SIZE; row++) {
@@ -414,7 +418,6 @@ SC_MODULE (back_propogation) {
 		dont_initialize();
 			for (int row = 0; row < BATCH_SIZE; row++) {
 				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-					nfd_out_debug[row][col].write(nfd_out[row][col].read());
 					sensitive << nfd_out[row][col];
 				}
 			}
@@ -427,6 +430,7 @@ SC_MODULE (back_propogation) {
 				// forward_propogate
 				forward_propogate.input[row][col](input_data[row][col]);
 				forward_propogate.out1[row][col](fp_out1[row][col]);
+				// forward_propogate.out1[row][col](fp_out1_debug[row*INPUT_DIMENSION + col]);
 				// weight1_update
 				weight1_update.out2[row][col](fp_out1[row][col]);
 			}
@@ -435,9 +439,11 @@ SC_MODULE (back_propogation) {
 			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
 				// forward_propogate
 				forward_propogate.out2[row][col](fp_out2[row][col]);
+				// forward_propogate.out2[row][col](fp_out2_debug[row*HIDDEN_LAYER_DIMENSION + col]);
 				// non_final_delta
 				non_final_delta.previous_output[row][col](fp_out2[row][col]);
 				non_final_delta.delta[row][col](nfd_out[row][col]);
+				// non_final_delta.delta[row][col](nfd_out_debug[row*HIDDEN_LAYER_DIMENSION + col]);
 				// weight1_update
 				weight1_update.final_delta[row][col](nfd_out[row][col]);
 				// weight2_update
@@ -451,7 +457,9 @@ SC_MODULE (back_propogation) {
 				// final_delta
 				final_delta.labels[row][col](input_labels[row][col]);
 				final_delta.outf[row][col](fp_outf[row][col]);
+				// final_delta.outf[row][col](fp_outf_debug[row*OUTPUT_DIMENSION + col]);
 				final_delta.output[row][col](fd_out[row][col]);
+				// final_delta.output[row][col](fd_out_debug[row*OUTPUT_DIMENSION + col]);
 				// non_final_delta
 				non_final_delta.later_delta[row][col](fd_out[row][col]);
 				// weight2_update

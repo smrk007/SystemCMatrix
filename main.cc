@@ -20,10 +20,10 @@ int sc_main(int argc, char* argv[]) {
 	sc_signal<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_signal<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_signal<float>		fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
 	#if DEBUG == true
 	sc_signal<float>		fp_out1_debug[BATCH_SIZE][INPUT_DIMENSION];
 	sc_signal<float>		fp_out2_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float>		fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<float>		fd_out_debug[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<float>		nfd_out_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
 	#endif 
@@ -40,6 +40,7 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			trainer.input_labels[row][col](input_labels[row][col]);
+			trainer.fp_outf_debug[row*OUTPUT_DIMENSION + col](fp_outf_debug[row][col]);
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -57,19 +58,18 @@ int sc_main(int argc, char* argv[]) {
 	#if DEBUG == true
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
-			trainer.fp_out1_debug[row][col](fp_out1_debug[row][col]);
+			trainer.fp_out1_debug[row*INPUT_DIMENSION + col](fp_out1_debug[row][col]);
 		}
 	}
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-			trainer.fp_out2_debug[row][col](fp_out2_debug[row][col]);
-			trainer.nfd_out_debug[row][col](nfd_out_debug[row][col]);
+			trainer.fp_out2_debug[row*HIDDEN_LAYER_DIMENSION + col](fp_out2_debug[row][col]);
+			trainer.nfd_out_debug[row*HIDDEN_LAYER_DIMENSION + col](nfd_out_debug[row][col]);
 		}
 	}
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-			trainer.fp_outf_debug[row][col](fp_outf_debug[row][col]);
-			trainer.fd_out_debug[row][col](fd_out_debug[row][col]);
+			trainer.fd_out_debug[row*OUTPUT_DIMENSION + col](fd_out_debug[row][col]);
 		}
 	}
 	#endif
@@ -86,6 +86,7 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			sc_trace(trace_file, input_labels[row][col], "input_labels");
+			sc_trace(trace_file, fp_outf_debug[row][col], "fp_outf_debug");
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -115,7 +116,6 @@ int sc_main(int argc, char* argv[]) {
 	}
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-			sc_trace(trace_file, fp_outf_debug[row][col], "fp_outf_debug");
 			sc_trace(trace_file, fd_out_debug[row][col], "fd_out_debug");
 		}
 	}
@@ -127,12 +127,12 @@ int sc_main(int argc, char* argv[]) {
 	float input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION];
 	// Generating the data
 	load_data(input_data_raw,input_labels_raw);
+	// Sending data to signals
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
 			input_data[row][col] = input_data_raw[row][col];
 		}
 	}
-	// Sending data to signals
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			input_labels[row][col] = input_labels_raw[row][col];
@@ -169,18 +169,33 @@ int sc_main(int argc, char* argv[]) {
 	// Training loop
 	std::cout << "Commencing training" << std::endl;
 	int count = 0;
-	while (count < 1) {
+	int error = 0;
+	while (count < 1000) {
 		sc_start(1,SC_MS);
-		// for (int row = 0; row < INPUT_DIMENSION; row++) {
-		// 	for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-		// 		input_weights1[row][col] = input_weights1[row][col] - (output_weights1[row][col]);
-		// 	}
-		// }
-		// for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
-		// 	for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-		// 		input_weights2[row][col] = input_weights2[row][col] - (output_weights2[row][col]);
-		// 	}
-		// }
+
+		// Weight adjustment
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				input_weights1[row][col] = input_weights1[row][col] - (0.1*output_weights1[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				input_weights2[row][col] = input_weights2[row][col] - (0.1*output_weights2[row][col]);
+			}
+		}
+
+		// Calculating R^2 error
+		error = 0;
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				float element_error = ((float) input_labels[row][col]) - ((float) fp_outf_debug[row][col]);
+				error += element_error * element_error;
+			}
+		}
+		std::cout << fp_outf_debug[0][0] << std::endl;
+
+		// Calculating % Correct
 
 		count++;
 	}
