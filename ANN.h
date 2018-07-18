@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <systemc.h>
+
+#include "Modes.h"
 #include "SystemCMatrix.h"
 
 template <int BATCH_SIZE, int INPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION, int OUTPUT_DIMENSION>
@@ -270,13 +272,61 @@ template <int BATCH_SIZE, int INPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION, int O
 SC_MODULE (back_propogation) {
 
 	// Ports
-	sc_in<float> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
-	sc_in<float> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_in<float>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_in<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_out<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_out<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_out<float>		output_labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_core::sc_in<float> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
+	sc_core::sc_in<float> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_core::sc_in<float>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_in<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_core::sc_out<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_out<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+
+	// Debug
+	#if DEBUG == true
+	
+	// Debug Ports
+	sc_core::sc_out<float>	fp_out1_debug[BATCH_SIZE][INPUT_DIMENSION];
+	sc_core::sc_out<float>	fp_out2_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_out<float>	fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_core::sc_out<float>	fd_out_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_core::sc_out<float>	nfd_out_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+
+	// Debug Methods
+	void set_fp_out1_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < INPUT_DIMENSION; col++) {
+				fp_out1_debug[row][col].write(fp_out1[row][col].read());
+			}
+		}
+	}
+	void set_fp_out2_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				fp_out2_debug[row][col].write(fp_out2[row][col].read());
+			}
+		}
+	}
+	void set_fp_outf_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				fp_outf_debug[row][col].write(fp_outf[row][col].read());
+			}
+		}
+	}
+	void set_fd_out_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				fd_out_debug[row][col].write(fd_out[row][col].read());
+			}
+		}
+	}
+	void set_nfd_out_debug() {
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				nfd_out_debug[row][col].write(nfd_out[row][col].read());
+			}
+		}
+	}
+	
+	#endif
 
 	// Signals
 	sc_signal<float>	fp_out1[BATCH_SIZE][INPUT_DIMENSION];
@@ -292,23 +342,85 @@ SC_MODULE (back_propogation) {
 	weight_update<INPUT_DIMENSION,BATCH_SIZE,HIDDEN_LAYER_DIMENSION>			weight1_update;
 	weight_update<HIDDEN_LAYER_DIMENSION,BATCH_SIZE,OUTPUT_DIMENSION>			weight2_update;
 
-	// Methods
-	void feedforward_output() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				output_labels[row][col].write(fp_outf[row][col].read());
-			}
-		}
-	}
-
 	SC_CTOR (back_propogation) : forward_propogate("FORWARD_PROPOGATE"), final_delta("FINAL_DELTA"), non_final_delta("NON_FINAL_DELTA"), weight1_update("WEIGHT1_UPDATE"), weight2_update("WEIGHT2_UPDATE") {
-		SC_METHOD (feedforward_output);
-		dont_initialize();
+
+		#if DEBUG == true
+		// NOTE: sc_in<float> files are given no name because operator= is a private member variable
 		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				sensitive << fp_outf[row][col];
+			for (int col = 0; col < INPUT_DIMENSION; col++) {
+				fp_out1_debug[row][col] = sc_core::sc_out<float>("fp_out1_debug");
 			}
 		}
+
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				fp_outf_debug[row][col] = sc_core::sc_out<float>("fp_outf_debug");
+				fd_out_debug[row][col] = sc_core::sc_out<float>("fd_out_debug");
+			}
+		}
+
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				fp_out2_debug[row][col] = sc_core::sc_out<float>("fp_out2_debug");
+				nfd_out_debug[row][col] = sc_core::sc_out<float>("nfd_out_debug");
+			}
+		}
+
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				output_weights1[row][col] = sc_core::sc_out<float>("output_weights1");
+			}
+		}
+
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				output_weights2[row][col] = sc_core::sc_out<float>("output_weights2");
+			}
+		}
+		#endif 
+		
+		// Debug Methods
+		#if DEBUG == true
+
+		SC_METHOD(set_fp_out1_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < INPUT_DIMENSION; col++) {
+					sensitive << fp_out1[row][col];
+				}
+			}
+		SC_METHOD(set_fp_out2_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+					sensitive << fp_out2[row][col];
+				}
+			}
+		SC_METHOD(set_fp_outf_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+					sensitive << fp_outf[row][col];
+				}
+			}
+		SC_METHOD(set_fd_out_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+					sensitive << fd_out[row][col];
+				}
+			}
+		SC_METHOD(set_nfd_out_debug);
+		dont_initialize();
+			for (int row = 0; row < BATCH_SIZE; row++) {
+				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+					nfd_out_debug[row][col].write(nfd_out[row][col].read());
+					sensitive << nfd_out[row][col];
+				}
+			}
+
+		#endif
+
 		// Linking components together
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < INPUT_DIMENSION; col++) {

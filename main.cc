@@ -4,10 +4,11 @@
 #include <iostream>
 #include <systemc.h>
 
-#include "SystemCMatrix.h"
 #include "ANN.h"
-#include "DataLoader.h"
 #include "Constants.h"
+#include "DataLoader.h"
+#include "Modes.h"
+#include "SystemCMatrix.h"
 
 int sc_main(int argc, char* argv[]) {
 
@@ -19,7 +20,13 @@ int sc_main(int argc, char* argv[]) {
 	sc_signal<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_signal<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_signal<float>		output_labels[BATCH_SIZE][OUTPUT_DIMENSION]; // TODO: Complete the necessary connections for this
+	#if DEBUG == true
+	sc_signal<float>		fp_out1_debug[BATCH_SIZE][INPUT_DIMENSION];
+	sc_signal<float>		fp_out2_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<float>		fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>		fd_out_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<float>		nfd_out_debug[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	#endif 
 
 	// Linking signals to back propogation module
 	std::cout << "Initializing back-propogation model" << std::endl;
@@ -33,7 +40,6 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			trainer.input_labels[row][col](input_labels[row][col]);
-			trainer.output_labels[row][col](output_labels[row][col]);
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -48,6 +54,25 @@ int sc_main(int argc, char* argv[]) {
 			trainer.output_weights2[row][col](output_weights2[row][col]);
 		}
 	}
+	#if DEBUG == true
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < INPUT_DIMENSION; col++) {
+			trainer.fp_out1_debug[row][col](fp_out1_debug[row][col]);
+		}
+	}
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+			trainer.fp_out2_debug[row][col](fp_out2_debug[row][col]);
+			trainer.nfd_out_debug[row][col](nfd_out_debug[row][col]);
+		}
+	}
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+			trainer.fp_outf_debug[row][col](fp_outf_debug[row][col]);
+			trainer.fd_out_debug[row][col](fd_out_debug[row][col]);
+		}
+	}
+	#endif
 
 	// Linking signals to trace file
 	std::cout << "Creating trace file" << std::endl;
@@ -61,7 +86,6 @@ int sc_main(int argc, char* argv[]) {
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 			sc_trace(trace_file, input_labels[row][col], "input_labels");
-			sc_trace(trace_file, output_labels[row][col], "output_labels");
 		}
 	}
 	for (int row = 0; row < INPUT_DIMENSION; row++) {
@@ -76,7 +100,26 @@ int sc_main(int argc, char* argv[]) {
 			sc_trace(trace_file, output_weights2[row][col], "output_weights2");
 		}
 	}
-	
+
+	#if DEBUG == true
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < INPUT_DIMENSION; col++) {
+			sc_trace(trace_file, fp_out1_debug[row][col], "fp_out1_debug");
+		}
+	}
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+			sc_trace(trace_file, fp_out2_debug[row][col], "fp_out2_debug");
+			sc_trace(trace_file, nfd_out_debug[row][col], "nfd_out_debug");
+		}
+	}
+	for (int row = 0; row < BATCH_SIZE; row++) {
+		for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+			sc_trace(trace_file, fp_outf_debug[row][col], "fp_outf_debug");
+			sc_trace(trace_file, fd_out_debug[row][col], "fd_out_debug");
+		}
+	}
+	#endif
 
 	// Loading batch data into the arrays and signals
 	std::cout << "Loading data" << std::endl;
@@ -126,29 +169,23 @@ int sc_main(int argc, char* argv[]) {
 	// Training loop
 	std::cout << "Commencing training" << std::endl;
 	int count = 0;
-	float total_error = 0;
-	while (true) {
+	while (count < 1) {
 		sc_start(1,SC_MS);
-		for (int row = 0; row < INPUT_DIMENSION; row++) {
-			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				input_weights1[row][col] = input_weights1[row][col] - (output_weights1[row][col]);
-			}
-		}
-		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				input_weights2[row][col] = input_weights2[row][col] - (output_weights2[row][col]);
-			}
-		}
+		// for (int row = 0; row < INPUT_DIMENSION; row++) {
+		// 	for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+		// 		input_weights1[row][col] = input_weights1[row][col] - (output_weights1[row][col]);
+		// 	}
+		// }
+		// for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+		// 	for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+		// 		input_weights2[row][col] = input_weights2[row][col] - (output_weights2[row][col]);
+		// 	}
+		// }
 
-		total_error = 0;
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				total_error += (input_labels[row][col] - output_labels[row][col]) * (input_labels[row][col] - output_labels[row][col]);
-			}
-		}
-		
-		std::cout << ++count << ": " << total_error << std::endl;
+		count++;
 	}
+
+	sc_close_vcd_trace_file(trace_file);
 
 	return 0;
 }
