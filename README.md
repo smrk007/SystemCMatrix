@@ -26,5 +26,4 @@ make
 ### Sources Used in Implementation
 
 + SystemC Tutorial [http://www.asic-world.com/systemc/tutorial.html]
-
 + Backpropogation Reference [https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/]
