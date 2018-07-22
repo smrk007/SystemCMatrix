@@ -23,7 +23,11 @@ make
 
 ### Notes on Overall Structure
 
+The back-propogation algorithm is implemented as a SC_MODULE with inputs for the batch data, batch labels, as well as the current weights, with outputs for the derivatives of the weights found through back-propagation. A visualization of the algorithm and its sub-modules is expressed below in this diagram:
 
+![alt text][back-propogation]
+
+[back-propogation]: https://github.com/smrk007/SystemCMatrix/blob/master/Back%20Propogation%20Algorithm-Back%20Propogation.png
 
 ### Sources Used in Implementation
 
