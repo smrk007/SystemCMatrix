@@ -31,11 +31,11 @@ Another potential point of confusion might be in the naming of the component, 'a
 
 ### Notes on Implementation
 
+In order to achieve the final goal of a artificial neural networks with multiple hidden layers with easily specifiable sizes, it was decided that sub-components should be implemented as C++ template classes, in order to allow for easy manipulation, as is necessary.
 
-
-### Notes on Methods Used
-
-
+All ports and signals within SC_MODULEs use the following structures: sc_in<double>, sc_out<double>, and sc_signal<double>. Floating point values is essential for the sigmoid activation function used in this implementation, and it was decided that maximizing the amount of precision used in signals and ports would be benefitial. One could easily manipulate the datatypes used if a different datatype is desired, or if double floating point precision is too much for the space allotted on a FPGA.
+  
+Most of the higher level components (back-propagation, feed-forward, etc.) have no methods, and simply pass the signals through its subcomponents, immediately returning that data through the output ports. In order to make this possible, and for the data to flow directly through the subcomponents, it is necessary that the subcomponents declare the sc_in ports as 'sensitive', to allow the function to perform automatically upon recieving data.
 
 ### Notes on Problems Faced
 
