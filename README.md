@@ -25,6 +25,6 @@ make
 
 ### Sources Used in Implementation
 
-+  SystemC Tutorial
+..+SystemC Tutorial
 
 ...http://www.asic-world.com/systemc/tutorial.html
