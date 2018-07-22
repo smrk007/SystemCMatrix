@@ -1,3 +1,5 @@
 # Running
-`make \n
-./main.exe`
+```
+make
+./main.exe
+```
