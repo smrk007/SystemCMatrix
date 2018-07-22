@@ -1,5 +1,5 @@
-#ifndef __CONSTANTS_H__
-#define __CONSTANTS_H__
+#ifndef __SPECS_H__
+#define __SPECS_H__
 
 // Data specifications
 #define BATCH_SIZE 100
@@ -12,7 +12,7 @@
 #define STOP_TIME 10 // Specified in minutes
 #define STOP_ITERATION 1000
 #define STOP_PERCENT 99 // Percent correct
-#define STOP_COST 5
+#define STOP_COST 5 // Sum-Error^2
 #define STEP_SIZE 0.03
 
-#endif /* Constants.h */
+#endif /* Specs.h */

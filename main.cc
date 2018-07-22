@@ -1,18 +1,19 @@
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <systemc.h>
 
 #include "ANN.h"
-#include "Constants.h"
+#include "Specs.h"
 #include "DataLoader.h"
 #include "SystemCMatrix.h"
 
 int sc_main(int argc, char* argv[]) {
 
 	// Creating signals
-	std::cout << "Initializing signals" << std::endl;
+	std::cerr << "Initializing signals" << std::endl;
 	sc_signal<double> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
 	sc_signal<double> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
 	sc_signal<double>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
@@ -22,9 +23,9 @@ int sc_main(int argc, char* argv[]) {
 	sc_signal<double>		fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Linking signals to back propogation module
-	std::cout << "Initializing back-propogation model" << std::endl;
+	std::cerr << "Initializing back-propogation model" << std::endl;
 	back_propogation<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION> trainer("TRAINER");
-	std::cout << "Linking signals" << std::endl;
+	std::cerr << "Linking signals" << std::endl;
 	for (int row = 0; row < BATCH_SIZE; row++) {
 		for (int col = 0; col < INPUT_DIMENSION; col++) {
 			trainer.input_data[row][col](input_data[row][col]);
@@ -50,7 +51,7 @@ int sc_main(int argc, char* argv[]) {
 	}
 	
 	// Loading batch data into the arrays and signals
-	std::cout << "Loading data" << std::endl;
+	std::cerr << "Loading data" << std::endl;
 	double input_data_raw[BATCH_SIZE][INPUT_DIMENSION];
 	double input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION];
 	// Generating the data
@@ -68,7 +69,7 @@ int sc_main(int argc, char* argv[]) {
 	
 	}
 	// Generating randomized weights
-	std::cout << "Generating weights" << std::endl;
+	std::cerr << "Generating weights" << std::endl;
 	double weights1_raw[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	double weights2_raw[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	// Generating the weights
@@ -86,15 +87,22 @@ int sc_main(int argc, char* argv[]) {
 	}
 
 	// Training loop
-	std::cout << "Commencing training" << std::endl;
+	std::cerr << "Commencing training" << std::endl;
 	int iteration = 0;
 	double error = 10000;
+	double previous_error = 0;
 	double correct = 0.0;
+	clock_t starting_time = clock();
+	clock_t previous_time = clock();
+	clock_t current_time = clock();
+
 	while 	(	\
 			iteration < STOP_ITERATION && \
 			correct/BATCH_SIZE < STOP_PERCENT && \
-			error > STOP_COST \
-			) 
+			error > STOP_COST && \
+			(current_time - starting_time) / CLOCKS_PER_SEC / 60 < STOP_TIME \
+	)
+			
 	{
 		sc_start(1,SC_MS);
 		// Weight adjustment
@@ -109,7 +117,8 @@ int sc_main(int argc, char* argv[]) {
 			}
 		}
 
-		// Calculating R^2 error
+		// Calculating sum error squared
+		previous_error = error;
 		error = 0;
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
@@ -137,10 +146,19 @@ int sc_main(int argc, char* argv[]) {
 		}
 		
 		iteration++;
-		std::cout << "Iteration: " << std::setw(6) << std::left << iteration << " ";
-		std::cout << "Error-Squared: " << std::setw(12) << std::left << error << " ";
-		std::cout << "Correct: " << std::setw(12) << std::left << correct << std::endl;
-	}
 
+		previous_time = current_time;
+		current_time = clock();
+
+		// Iteration information
+		std::cout << "Iteration: " << std::setw(6) << std::left << iteration << " ";
+		std::cout << "Correct: " << std::setw(3) << std::right << correct << "/" << BATCH_SIZE <<  " ";
+		std::cout << "Sum-Error^2: " << std::setw(8) << std::left << error << " ";
+		std::cout << "Delta-Error: " << std::setw(9) << std::left << error - previous_error << " ";
+		std::cout << "Time: " << std::setw(8) << std::left << ((double) current_time - (double) starting_time) / CLOCKS_PER_SEC / 60 << " ";
+		std::cout << "Delta-Time: " << std::setw(8) << std::left << ((double) current_time - (double) previous_time) / CLOCKS_PER_SEC << " ";
+		std::cout << std::endl;
+	}
+	std::cerr << "Training terminated" << std::endl;
 	return 0;
 }

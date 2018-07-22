@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include "Constants.h"
+#include "Specs.h"
 
 void load_data(double input_data_raw[BATCH_SIZE][INPUT_DIMENSION], double input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION], std::string data_file_path) {
     ifstream data_location(data_file_path.c_str());

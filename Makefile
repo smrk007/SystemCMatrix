@@ -6,8 +6,8 @@ CXXFLAGS = -g
 
 all:	  bin/main.exe 
 
-bin/main.exe:	main.o SystemCMatrix.o ANN.h DataLoader.h
+bin/main.exe:	main.o SystemCMatrix.o
 	$(CXX) -g -o $@ $< $(LDLIBS) -v $(LDFLAGS)
 
 clean:
-	rm *.o bin/*.exe *.vcd
+	rm -R *.o bin/*.exe *.vcd *.dSYM *.log *.sym
