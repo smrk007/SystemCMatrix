@@ -8,8 +8,8 @@
 
 #include "Constants.h"
 
-void load_data(float input_data_raw[BATCH_SIZE][INPUT_DIMENSION], float input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION]) {
-    ifstream data_location(DATA_FILE_PATH);
+void load_data(double input_data_raw[BATCH_SIZE][INPUT_DIMENSION], double input_labels_raw[BATCH_SIZE][OUTPUT_DIMENSION], std::string data_file_path) {
+    ifstream data_location(data_file_path.c_str());
     for (int row = 0; row < BATCH_SIZE; row++) {
 
         // Looking at one row
@@ -29,13 +29,44 @@ void load_data(float input_data_raw[BATCH_SIZE][INPUT_DIMENSION], float input_la
             }
             // Dealing with non-labels
             else {
-                // NOTE: Data scaled down by 10,000 to avoid NaN in sigmoid activation
-                input_data_raw[row][col-1] = atof(row_element.c_str()) / 10000; 
+                input_data_raw[row][col-1] = atof(row_element.c_str()); 
             }
         }
     }
 }
 
+void load_weights(double weights1_raw[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION], double weights2_raw[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION]) {
 
+}
+
+#define READ_FROM_CSV(array_name,rows,columns,file_path) \
+    do { \
+        ifstream fin(file_path); \
+        std::cout << "Reading data from: " << file_path << std::endl; \
+        for (int row = 0; row < rows; row++) { \
+            std::string row_data; \
+            getline(fin,row_data); \
+            std::stringstream row_data_stream(row_data); \
+            for (int col = 0; col < columns; col++) { \
+                std::string row_element; \
+                getline(row_data_stream,row_element,','); \
+                array_name[row][col] = atof(row_element.c_str()); \
+            } \
+        } \
+    } while(0)
+
+#define WRITE_TO_CSV(array_name,rows,columns,file_path) \
+    do { \
+        ofstream fout(file_path); \
+        for (int row = 0; row < rows; row++) { \
+            for (int col = 0; col < columns; col++) { \
+                fout << array_name[row][col]; \
+                if (col < columns - 1) { \
+                    fout << ','; \
+                } \
+            } \
+            fout << std::endl; \
+        } \
+    } while (false);
 
 #endif /* DataLoader.h */

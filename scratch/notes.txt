@@ -16,7 +16,7 @@ A kind of sensitivity to run whenever some event or time is completed. No trigge
 SC_CTOR
 Essentially the constructor for a SC module.
 
-int, long int, unsigned int, unsigned long int, unsigned short int, short, float, char, bool
+int, long int, unsigned int, unsigned long int, unsigned short int, short, double, char, bool
 Datatypes supported by the SystemC standard.
 
 sc_logic

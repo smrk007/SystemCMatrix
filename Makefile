@@ -4,13 +4,10 @@ LDLIBS = -lsystemc
 LDFLAGS = -Wl,-stack_size -Wl,10000000
 CXXFLAGS = -g
 
-all:	bin/main.exe bin/test_sigmoid.exe bin/test_arr_mult.exe
+all:	  bin/main.exe 
 
-bin/main.exe:	main.o SystemCMatrix.o ANN.h
+bin/main.exe:	main.o SystemCMatrix.o ANN.h DataLoader.h
 	$(CXX) -g -o $@ $< $(LDLIBS) -v $(LDFLAGS)
-
-bin/test_%.exe:	test_%.o SystemCMatrix.o ANN.h
-	$(CXX) -g -o $@ $< $(LDLIBS)
 
 clean:
 	rm *.o bin/*.exe *.vcd

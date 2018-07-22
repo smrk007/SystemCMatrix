@@ -4,32 +4,25 @@
 #include <iostream>
 #include <systemc.h>
 
-#include "Modes.h"
 #include "SystemCMatrix.h"
-
-#if DEBUG == true
-	#define DEBUG_COMMA ,
-#else
-	#define DEBUG_COMMA
-#endif
 
 template <int BATCH_SIZE, int INPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION, int OUTPUT_DIMENSION>
 SC_MODULE (feed_forward) {
 
 	// Ports
-	sc_in<float>		input[BATCH_SIZE][INPUT_DIMENSION];
-	sc_in<float>		weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_in<float>		weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_in<double>		input[BATCH_SIZE][INPUT_DIMENSION];
+	sc_in<double>		weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_in<double>		weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 
-	sc_out<float>		out1[BATCH_SIZE][INPUT_DIMENSION];
-	sc_out<float>		out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_out<float>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<double>		out1[BATCH_SIZE][INPUT_DIMENSION];
+	sc_out<double>		out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_out<double>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Signals
-	sc_signal<float>	mmult_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float>	mmult_out2[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	sig_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float>	sig_out2[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	mmult_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double>	mmult_out2[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	sig_out1[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double>	sig_out2[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Sub-Modules
 	matrix_multiplier<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION>	mmult1;
@@ -141,15 +134,15 @@ template <int BATCH_SIZE, int OUTPUT_DIMENSION>
 SC_MODULE (calculate_final_delta) {
 
 	// Ports
-	sc_in<float>		labels[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_in<float>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_out<float>		output[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<double>		labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<double>		outf[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<double>		output[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Signals
-	sc_signal<float>	subtract1_out[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	arr_mult1_out[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	ones_output[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	subtract2_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	subtract1_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	arr_mult1_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	ones_output[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	subtract2_out[BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Sub-Modules
 	array_subtractor<BATCH_SIZE,OUTPUT_DIMENSION>	subtract1;
@@ -188,12 +181,12 @@ template <int HIDDEN_LAYER_DIMENSION, int BATCH_SIZE, int OUTPUT_DIMENSION>
 SC_MODULE (weight_update) {
 
 	// Ports
-	sc_in<float>	out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_in<float>	final_delta[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_out<float>	output[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_in<double>	out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_in<double>	final_delta[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_out<double>	output[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 
 	// Signals
-	sc_signal<float>	transpose_out[HIDDEN_LAYER_DIMENSION][BATCH_SIZE];
+	sc_signal<double>	transpose_out[HIDDEN_LAYER_DIMENSION][BATCH_SIZE];
 
 	// Sub-Modules
 	matrix_transpose<BATCH_SIZE,HIDDEN_LAYER_DIMENSION>	transpose1;
@@ -228,17 +221,17 @@ template <int BATCH_SIZE, int OUTPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION>
 SC_MODULE (calculate_non_final_delta) {
 
 	// Ports
-	sc_in<float> later_delta[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_in<float> later_weights[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_in<float> previous_output[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_out<float> delta[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_in<double> later_delta[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in<double> later_weights[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_in<double> previous_output[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_out<double> delta[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
 
 	// Signals
-	sc_signal<float> transpose1_out[OUTPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float> mmult1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float> ones1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float> arr_mult1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float> subtract1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double> transpose1_out[OUTPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double> mmult1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double> ones1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double> arr_mult1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double> subtract1_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
 
 	// Sub Modules
 	matrix_transpose<HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION>		transpose1;
@@ -296,13 +289,13 @@ template <int BATCH_SIZE, int INPUT_DIMENSION, int HIDDEN_LAYER_DIMENSION, int O
 SC_MODULE (back_propogation) {
 
 	// Ports
-	sc_core::sc_in<float> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
-	sc_core::sc_in<float> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_core::sc_in<float>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_core::sc_in<float>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_core::sc_out<float>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
-	sc_core::sc_out<float>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
-	sc_core::sc_vector<sc_core::sc_out<float> >	fp_outf_debug;
+	sc_core::sc_in<double> 		input_data[BATCH_SIZE][INPUT_DIMENSION];
+	sc_core::sc_in<double> 		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_core::sc_in<double>		input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_in<double>		input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_core::sc_out<double>		output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_core::sc_out<double>		output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_core::sc_vector<sc_core::sc_out<double> >	fp_outf_debug;
 
 	void set_fp_outf_debug() {
 		for (int row = 0; row < BATCH_SIZE; row++) {
@@ -312,53 +305,12 @@ SC_MODULE (back_propogation) {
 		}
 	}
 
-	// Debug
-	#if DEBUG == true
-	
-	// Debug Ports
-	sc_core::sc_vector<sc_core::sc_out<float> >	fp_out1_debug;
-	sc_core::sc_vector<sc_core::sc_out<float> >	fp_out2_debug;
-	sc_core::sc_vector<sc_core::sc_out<float> >	fd_out_debug;
-	sc_core::sc_vector<sc_core::sc_out<float> >	nfd_out_debug;
-
-	// Debug Methods
-	void set_fp_out1_debug() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < INPUT_DIMENSION; col++) {
-				fp_out1_debug[row*INPUT_DIMENSION + col].write(fp_out1[row][col].read());
-			}
-		}
-	}
-	void set_fp_out2_debug() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				fp_out2_debug[row*HIDDEN_LAYER_DIMENSION + col].write(fp_out2[row][col].read());
-			}
-		}
-	}
-	void set_fd_out_debug() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-				fd_out_debug[row*OUTPUT_DIMENSION + col].write(fd_out[row][col].read());
-			}
-		}
-	}
-	void set_nfd_out_debug() {
-		for (int row = 0; row < BATCH_SIZE; row++) {
-			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-				nfd_out_debug[row*HIDDEN_LAYER_DIMENSION + col].write(nfd_out[row][col].read());
-			}
-		}
-	}
-	
-	#endif
-
 	// Signals
-	sc_signal<float>	fp_out1[BATCH_SIZE][INPUT_DIMENSION];
-	sc_signal<float>	fp_out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
-	sc_signal<float>	fp_outf[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	fd_out[BATCH_SIZE][OUTPUT_DIMENSION];
-	sc_signal<float>	nfd_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double>	fp_out1[BATCH_SIZE][INPUT_DIMENSION];
+	sc_signal<double>	fp_out2[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal<double>	fp_outf[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	fd_out[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_signal<double>	nfd_out[BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
 
 	// Sub-Modules
 	feed_forward<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION>	forward_propogate;
@@ -373,13 +325,7 @@ SC_MODULE (back_propogation) {
 		non_final_delta("NON_FINAL_DELTA"),
 		weight1_update("WEIGHT1_UPDATE"),
 		fp_outf_debug("FP_OUTF_DEBUG", BATCH_SIZE * OUTPUT_DIMENSION),
-		weight2_update("WEIGHT2_UPDATE") DEBUG_COMMA
-		#if DEBUG == true
-		fp_out1_debug("FP_OUT1_DEBUG", BATCH_SIZE * INPUT_DIMENSION),
-		fp_out2_debug("FP_OUT2_DEBUG", BATCH_SIZE * HIDDEN_LAYER_DIMENSION),
-		fd_out_debug("FD_OUT_DEBUG", BATCH_SIZE * OUTPUT_DIMENSION),
-		nfd_out_debug("NFD_OUT_DEBUG", BATCH_SIZE * HIDDEN_LAYER_DIMENSION)
-		#endif
+		weight2_update("WEIGHT2_UPDATE")
 	{
 
 		SC_METHOD(set_fp_outf_debug);
@@ -389,40 +335,6 @@ SC_MODULE (back_propogation) {
 					sensitive << fp_outf[row][col];
 				}
 			}
-		
-		// Debug Methods
-		#if DEBUG == true
-
-		SC_METHOD(set_fp_out1_debug);
-		dont_initialize();
-			for (int row = 0; row < BATCH_SIZE; row++) {
-				for (int col = 0; col < INPUT_DIMENSION; col++) {
-					sensitive << fp_out1[row][col];
-				}
-			}
-		SC_METHOD(set_fp_out2_debug);
-		dont_initialize();
-			for (int row = 0; row < BATCH_SIZE; row++) {
-				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-					sensitive << fp_out2[row][col];
-				}
-			}
-		SC_METHOD(set_fd_out_debug);
-		dont_initialize();
-			for (int row = 0; row < BATCH_SIZE; row++) {
-				for (int col = 0; col < OUTPUT_DIMENSION; col++) {
-					sensitive << fd_out[row][col];
-				}
-			}
-		SC_METHOD(set_nfd_out_debug);
-		dont_initialize();
-			for (int row = 0; row < BATCH_SIZE; row++) {
-				for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
-					sensitive << nfd_out[row][col];
-				}
-			}
-
-		#endif
 
 		// Linking components together
 		for (int row = 0; row < BATCH_SIZE; row++) {
@@ -457,9 +369,7 @@ SC_MODULE (back_propogation) {
 				// final_delta
 				final_delta.labels[row][col](input_labels[row][col]);
 				final_delta.outf[row][col](fp_outf[row][col]);
-				// final_delta.outf[row][col](fp_outf_debug[row*OUTPUT_DIMENSION + col]);
 				final_delta.output[row][col](fd_out[row][col]);
-				// final_delta.output[row][col](fd_out_debug[row*OUTPUT_DIMENSION + col]);
 				// non_final_delta
 				non_final_delta.later_delta[row][col](fd_out[row][col]);
 				// weight2_update

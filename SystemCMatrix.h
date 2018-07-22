@@ -8,9 +8,9 @@ SC_MODULE (matrix_adder) {
 	// Matrix-Matrix Logic Unit
 
 	// Ports
-	sc_in<float>		input1[2][2];
-	sc_in<float>		input2[2][2];
-	sc_out<float>		output[2][2];
+	sc_in<double>		input1[2][2];
+	sc_in<double>		input2[2][2];
+	sc_out<double>		output[2][2];
 
 	// Operation
 	void add();
@@ -30,12 +30,12 @@ template <int M1, int S, int M2>
 SC_MODULE (matrix_multiplier) {
 
 	// Ports
-	sc_in<float>		input1[M1][S];
-	sc_in<float>		input2[S][M2];
-	sc_out<float>		output[M1][M2];
+	sc_in<double>		input1[M1][S];
+	sc_in<double>		input2[S][M2];
+	sc_out<double>		output[M1][M2];
 
 	// Variables
-	float				temp[M1][M2];
+	double				temp[M1][M2];
 
 	// Operation
 	void multiply() {
@@ -83,14 +83,16 @@ template <int D1, int D2>
 SC_MODULE (sigmoid_activation) {
 
 	// Ports
-	sc_in<float>	input[D1][D2];
-	sc_out<float>	output[D1][D2];
+	sc_in<double>	input[D1][D2];
+	sc_out<double>	output[D1][D2];
 
 	// Operation
 	void activate() {
 		for (int row = 0; row < D1; row++) {
 			for (int col = 0; col < D2; col++) {
-				float value = std::exp(input[row][col].read()) / (1 + std::exp(input[row][col].read()));
+				double value = std::exp(-1*input[row][col].read());
+				value = 1 + value;
+				value = 1 / value;
 				output[row][col].write(value);
 			}
 		}
@@ -111,9 +113,9 @@ template <int D1, int D2>
 SC_MODULE (array_multiplier) {
 
 	// Ports
-	sc_in<float>	input1[D1][D2];
-	sc_in<float>	input2[D1][D2];
-	sc_out<float>	output[D1][D2];
+	sc_in<double>	input1[D1][D2];
+	sc_in<double>	input2[D1][D2];
+	sc_out<double>	output[D1][D2];
 
 	// Operation
 	void multiply() {
@@ -140,9 +142,9 @@ template <int D1, int D2>
 SC_MODULE (array_subtractor) {
 
 	// Ports
-	sc_in<float>	input1[D1][D2];
-	sc_in<float>	input2[D1][D2];
-	sc_out<float>	output[D1][D2];
+	sc_in<double>	input1[D1][D2];
+	sc_in<double>	input2[D1][D2];
+	sc_out<double>	output[D1][D2];
 
 	// Operation
 	void subtract() {
@@ -155,7 +157,6 @@ SC_MODULE (array_subtractor) {
 
 	SC_CTOR (array_subtractor) {
 		SC_METHOD (subtract);
-			dont_initialize();
 		for (int row = 0; row < D1; row++) {
 			for (int col = 0; col < D2; col++) {
 				sensitive << input1[row][col];
@@ -169,8 +170,8 @@ template <int D1, int D2>
 SC_MODULE (matrix_transpose) {
 
 	// Ports
-	sc_in<float>	input[D1][D2];
-	sc_out<float>	output[D2][D1];
+	sc_in<double>	input[D1][D2];
+	sc_out<double>	output[D2][D1];
 
 	// Operation
 	void transpose() {
@@ -196,7 +197,7 @@ template <int D1, int D2>
 SC_MODULE (ones_array) {
 
 	// Ports
-	sc_out<float>	output[D1][D2];
+	sc_out<double>	output[D1][D2];
 
 	// Operation
 	void create () {
