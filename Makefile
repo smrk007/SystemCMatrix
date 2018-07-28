@@ -6,7 +6,7 @@ CXXFLAGS = -g
 
 all:	  main.exe 
 
-main.exe:	main.o SystemCMatrix.o
+main.exe:	main.o
 	$(CXX) -g -o $@ $< $(LDLIBS) -v $(LDFLAGS)
 
 clean:

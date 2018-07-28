@@ -4,28 +4,6 @@
 #include <cmath>
 #include <systemc.h>
 
-SC_MODULE (matrix_adder) {
-	// Matrix-Matrix Logic Unit
-
-	// Ports
-	sc_in<double>		input1[2][2];
-	sc_in<double>		input2[2][2];
-	sc_out<double>		output[2][2];
-
-	// Operation
-	void add();
-
-	SC_CTOR (matrix_adder) {
-		SC_METHOD (add);
-		dont_initialize();
-		for (int row = 0; row < 2; row++) {
-			for (int col = 0; col < 2; col++) {
-				sensitive << input1[row][col] << input2[row][col];
-			}
-		}
-	}
-};
-
 template <int M1, int S, int M2>
 SC_MODULE (matrix_multiplier) {
 
