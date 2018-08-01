@@ -397,4 +397,153 @@ SC_MODULE (back_propogation) {
 	}
 };
 
+template <	int BATCH_SIZE, \
+			int INPUT_DIMENSION, \
+			int HIDDEN_LAYER_DIMENSION, \
+			int OUTPUT_DIMENSION \
+		>
+SC_MODULE (ann_trainer) {
+
+	// Ports
+	sc_in	<bool>			clk;
+	sc_in	<double>		input_data[BATCH_SIZE][INPUT_DIMENSION];
+	sc_in	<double>		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
+
+
+	// Signals
+	sc_signal	<double>	input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_signal	<double>	input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_signal	<double>	output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
+	sc_signal	<double>	output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
+	sc_signal 	<double>	fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+
+	// Local Variables
+	int iteration;
+	double error;
+	double previous_error;
+	double correct;
+	clock_t starting_time;
+	clock_t previous_time;
+	clock_t current_time;
+
+	// Sub Modules
+	back_propogation<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION> back_propogation_module;
+
+	// Methods
+	void initialize () {
+		std::cout << "Initializing BP module" << std::endl;
+
+		// Generating weights
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				input_weights1[row][col].write( ((double) rand()) / ((double) RAND_MAX / 2) - 1 );
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				input_weights2[row][col].write( ((double) rand()) / ((double) RAND_MAX / 2) - 1 );
+			}
+		}
+		std::cout << "Random weights generated" << std::endl;
+
+		// Loading local variables
+		iteration = 0;
+		error = 10000;
+		previous_error = 0;
+		correct = 0;
+		starting_time = clock();
+		previous_time = clock();
+		current_time = clock();
+		std::cout << "Local variables loaded" << std::endl;
+	}
+
+	void step () {
+		// Weight adjustment
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				input_weights1[row][col].write(input_weights1[row][col].read() - (0.03*output_weights1[row][col].read()));
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				input_weights2[row][col].write(input_weights2[row][col].read() - (0.03*output_weights2[row][col].read()));
+			}
+		}
+
+		// Calculating sum error squared
+		previous_error = error;
+		error = 0;
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				double element_error = ((double) input_labels[row][col].read()) - ((double) fp_outf_debug[row][col].read());
+				error += element_error * element_error;
+			}
+		}
+
+		// Calculating % Correct
+		correct = 0;
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			// Per row data
+			double max_value = 0;
+			int max_value_index = 0;
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				double value = fp_outf_debug[row][col].read();
+				if (value > max_value) {
+					max_value_index = col;
+					max_value = value;
+				}
+			}
+			if (input_labels[row][max_value_index].read() == 1) {
+				correct++;
+			}
+		}
+		
+		iteration++;
+
+		previous_time = current_time;
+		current_time = clock();
+
+		// Iteration information
+		std::cout << "Iteration: " << std::setw(6) << std::left << iteration << " ";
+		std::cout << "Correct: " << std::setw(3) << std::right << correct << "/" << BATCH_SIZE <<  " ";
+		std::cout << "Sum-Error^2: " << std::setw(8) << std::left << error << " ";
+		std::cout << "Delta-Error: " << std::setw(9) << std::left << error - previous_error << " ";
+		std::cout << "Time: " << std::setw(8) << std::left << ((double) current_time - (double) starting_time) / CLOCKS_PER_SEC / 60 << " ";
+		std::cout << "Delta-Time: " << std::setw(8) << std::left << ((double) current_time - (double) previous_time) / CLOCKS_PER_SEC << " ";
+		std::cout << std::endl;
+	}
+
+	SC_CTOR (ann_trainer) : back_propogation_module("BACK_PROPOGATION_MODULE")  {
+		// Methods
+		SC_METHOD (initialize);
+			dont_initialize();
+		SC_METHOD (step);
+			sensitive << clk;
+		// Binding BP Ports
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < INPUT_DIMENSION; col++) {
+				back_propogation_module.input_data[row][col](input_data[row][col]);
+			}
+		}
+		for (int row = 0; row < BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				back_propogation_module.input_labels[row][col](input_labels[row][col]);
+				back_propogation_module.fp_outf_debug[row*OUTPUT_DIMENSION + col](fp_outf_debug[row][col]);
+			}
+		}
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				back_propogation_module.input_weights1[row][col](input_weights1[row][col]);
+				back_propogation_module.output_weights1[row][col](output_weights1[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				back_propogation_module.input_weights2[row][col](input_weights2[row][col]);
+				back_propogation_module.output_weights2[row][col](output_weights2[row][col]);
+			}
+		}
+	}
+};
+
 #endif /* ANN.h */
