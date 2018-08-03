@@ -398,24 +398,37 @@ SC_MODULE (back_propogation) {
 };
 
 template <	int BATCH_SIZE, \
+			int TEST_BATCH_SIZE, \
 			int INPUT_DIMENSION, \
 			int HIDDEN_LAYER_DIMENSION, \
 			int OUTPUT_DIMENSION \
 		>
 SC_MODULE (ann_trainer) {
 
-	// Ports
+	// Data Ports
 	sc_in	<bool>			clk;
 	sc_in	<double>		input_data[BATCH_SIZE][INPUT_DIMENSION];
 	sc_in	<double>		input_labels[BATCH_SIZE][OUTPUT_DIMENSION];
+	sc_in	<double>		input_test_data[TEST_BATCH_SIZE][INPUT_DIMENSION];
+	sc_in	<double>		input_test_labels[TEST_BATCH_SIZE][OUTPUT_DIMENSION];
 
+	// Specification Ports
+	sc_in	<int>			stop_iteration;
+	sc_in	<double>		stop_percent;
+	sc_in	<double>		stop_cost;
+	sc_in	<double>		stop_time;
 
-	// Signals
+	// BP Signals
 	sc_signal	<double>	input_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal	<double>	input_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_signal	<double>	output_weights1[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION];
 	sc_signal	<double>	output_weights2[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION];
 	sc_signal 	<double>	fp_outf_debug[BATCH_SIZE][OUTPUT_DIMENSION];
+
+	// FF Signals
+	sc_signal	<double>	ff_out1[TEST_BATCH_SIZE][INPUT_DIMENSION];
+	sc_signal	<double>	ff_out2[TEST_BATCH_SIZE][HIDDEN_LAYER_DIMENSION];
+	sc_signal	<double>	ff_outf[TEST_BATCH_SIZE][OUTPUT_DIMENSION];
 
 	// Local Variables
 	int iteration;
@@ -428,6 +441,7 @@ SC_MODULE (ann_trainer) {
 
 	// Sub Modules
 	back_propogation<BATCH_SIZE,INPUT_DIMENSION,HIDDEN_LAYER_DIMENSION,OUTPUT_DIMENSION> back_propogation_module;
+	feed_forward<TEST_BATCH_SIZE, INPUT_DIMENSION, HIDDEN_LAYER_DIMENSION, OUTPUT_DIMENSION> feed_forward_module;
 
 	// Methods
 	void initialize () {
@@ -479,6 +493,7 @@ SC_MODULE (ann_trainer) {
 				error += element_error * element_error;
 			}
 		}
+		error /= BATCH_SIZE * OUTPUT_DIMENSION;
 
 		// Calculating % Correct
 		correct = 0;
@@ -506,19 +521,78 @@ SC_MODULE (ann_trainer) {
 		// Iteration information
 		std::cout << "Iteration: " << std::setw(6) << std::left << iteration << " ";
 		std::cout << "Correct: " << std::setw(3) << std::right << correct << "/" << BATCH_SIZE <<  " ";
-		std::cout << "Sum-Error^2: " << std::setw(8) << std::left << error << " ";
-		std::cout << "Delta-Error: " << std::setw(9) << std::left << error - previous_error << " ";
+		std::cout << "Sum-Error^2: " << std::setw(10) << std::left << error << " ";
+		std::cout << "Delta-Error: " << std::setw(12) << std::left << error - previous_error << " ";
 		std::cout << "Time: " << std::setw(8) << std::left << ((double) current_time - (double) starting_time) / CLOCKS_PER_SEC / 60 << " ";
 		std::cout << "Delta-Time: " << std::setw(8) << std::left << ((double) current_time - (double) previous_time) / CLOCKS_PER_SEC << " ";
 		std::cout << std::endl;
+
+		// Termination
+		bool case1 = iteration < stop_iteration.read();
+		bool case2 = correct / BATCH_SIZE < stop_percent.read();
+		bool case3 = error > stop_cost.read();
+		bool case4 = (current_time - starting_time) / CLOCKS_PER_SEC / 60 < stop_time.read();
+		if (case1 && case2 && case3 && case4) {
+			// Continue
+		} else {
+			if (!case1) {
+				std::cout << "Training terminated: Max iteration reached." << std::endl;
+			}
+			if (!case2) {
+				std::cout << "Training terminated: Halting percentage reached." << std::endl;
+			}
+			if (!case3) {
+				std::cout << "Training termianted: Minimum cost reached." << std::endl;
+			}
+			if (!case4) {
+				std::cout << "Training terminated: Max time reached." << std::endl;
+			}
+			sc_stop();
+		}
 	}
 
-	SC_CTOR (ann_trainer) : back_propogation_module("BACK_PROPOGATION_MODULE")  {
+	void test() {
+		std::cout << "Commencing testing" << std::endl;
+
+		double test_error = 0;
+		for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				double element_error = ((double) input_test_labels[row][col].read()) - ((double) ff_outf[row][col].read());
+				test_error += element_error * element_error;
+			}
+		}
+		test_error /= TEST_BATCH_SIZE * OUTPUT_DIMENSION;
+		std::cout << "TEST ERROR: " << test_error << std::endl;
+
+		// Calculating % Correct
+		correct = 0;
+		for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+			// Per row data
+			double max_value = 0;
+			int max_value_index = 0;
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				double value = ff_outf[row][col].read();
+				if (value > max_value) {
+					max_value_index = col;
+					max_value = value;
+				}
+			}
+			if (input_test_labels[row][max_value_index].read() == 1) {
+				correct++;
+			}
+		}
+		std::cout << "TEST_CORRECT: " << correct << "/10" << std::endl;
+
+	}
+
+	SC_CTOR (ann_trainer) : back_propogation_module("BACK_PROPOGATION_MODULE"), feed_forward_module("FEED_FORWARD_MODULE") {
 		// Methods
 		SC_METHOD (initialize);
 			dont_initialize();
 		SC_METHOD (step);
 			sensitive << clk;
+		SC_METHOD (test);
+			dont_initialize();
 		// Binding BP Ports
 		for (int row = 0; row < BATCH_SIZE; row++) {
 			for (int col = 0; col < INPUT_DIMENSION; col++) {
@@ -541,6 +615,33 @@ SC_MODULE (ann_trainer) {
 			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
 				back_propogation_module.input_weights2[row][col](input_weights2[row][col]);
 				back_propogation_module.output_weights2[row][col](output_weights2[row][col]);
+			}
+		}
+		// Binding FF Ports
+		for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+			for (int col = 0; col < INPUT_DIMENSION; col++) {
+				feed_forward_module.out1[row][col](ff_out1[row][col]);
+				feed_forward_module.input[row][col](input_test_data[row][col]);
+			}
+		}
+		for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				feed_forward_module.out2[row][col](ff_out2[row][col]);
+			}
+		}
+		for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				feed_forward_module.outf[row][col](ff_outf[row][col]);
+			}
+		}
+		for (int row = 0; row < INPUT_DIMENSION; row++) {
+			for (int col = 0; col < HIDDEN_LAYER_DIMENSION; col++) {
+				feed_forward_module.weights1[row][col](input_weights1[row][col]);
+			}
+		}
+		for (int row = 0; row < HIDDEN_LAYER_DIMENSION; row++) {
+			for (int col = 0; col < OUTPUT_DIMENSION; col++) {
+				feed_forward_module.weights2[row][col](input_weights2[row][col]);
 			}
 		}
 	}

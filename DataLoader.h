@@ -35,6 +35,34 @@ void load_data(double input_data_raw[BATCH_SIZE][INPUT_DIMENSION], double input_
     }
 }
 
+void load_test_data(double input_test_data_raw[TEST_BATCH_SIZE][INPUT_DIMENSION], double input_test_labels_raw[TEST_BATCH_SIZE][OUTPUT_DIMENSION], std::string data_file_path) {
+    ifstream data_location(data_file_path.c_str());
+    for (int row = 0; row < TEST_BATCH_SIZE; row++) {
+
+        // Looking at one row
+        std::string row_data;
+        getline(data_location,row_data);
+        std::stringstream row_data_stream(row_data);
+
+        for (int col = 0; col < INPUT_DIMENSION + 1; col++) {
+            
+            // Looking at one element within a row
+            std::string row_element;
+            getline(row_data_stream,row_element,',');
+
+            // Dealing with labels
+            if (col == 0) {
+                input_test_labels_raw[row][atoi(row_element.c_str())] = 1;
+            }
+            // Dealing with non-labels
+            else {
+                input_test_data_raw[row][col-1] = atof(row_element.c_str()); 
+            }
+        }
+    }
+}
+
+
 void load_weights(double weights1_raw[INPUT_DIMENSION][HIDDEN_LAYER_DIMENSION], double weights2_raw[HIDDEN_LAYER_DIMENSION][OUTPUT_DIMENSION]) {
 
 }
